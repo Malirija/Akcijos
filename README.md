@@ -17,10 +17,10 @@ Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in `.env` (the Supab
 
 ## Supabase configuration
 
-1. Apply `supabase/migrations/001_initial_schema.sql` using `supabase db push` after linking the project, or paste it into the Supabase SQL editor. The migration creates the schema, RLS policies, auth trigger, and RPCs.
+1. Apply all migrations, including `supabase/migrations/002_watchlist_user_default.sql`, using `supabase db push` after linking the project, or apply them in order in the Supabase SQL editor. The migrations create the schema, RLS policies, auth trigger, and RPCs. Migration 002 fixes existing installations so watchlist inserts derive `user_id` from the authenticated JWT.
 2. Enable email/password sign-in in Supabase Auth. Configure the allowed redirect URLs for local and deployed app URLs.
 3. Set Edge Function secret `ALPHA_VANTAGE_API_KEY` with `supabase secrets set ALPHA_VANTAGE_API_KEY=...`. Supabase provides `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` to Edge Functions; the service-role key is used only server-side for restricted database RPCs and must never be exposed to browser code.
-4. Deploy `stock-price` and `execute-trade` with JWT verification enabled (the default). For local development, serve the functions with the same JWT verification and local Supabase secrets.
+4. Deploy `stock-price` and `execute-trade` with JWT verification enabled (the default): `supabase functions deploy stock-price` and `supabase functions deploy execute-trade`. For local development, serve the functions with the same JWT verification and local Supabase secrets.
 5. Configure the Vercel project root to this repository. Add the two `VITE_` variables to Vercel environment settings and deploy. Never configure a service-role key in the browser.
 
 ## Financial security design
@@ -48,6 +48,7 @@ No database, Auth, Alpha Vantage, deployment, or Edge Function integration has b
 - This is an MVP foundation, not investment advice or a production financial platform.
 - Alpha Vantage quote freshness and request limits depend on the selected provider plan.
 - A quote-cache failure rejects quote and trade operations instead of silently substituting a stale execution price.
-- Portfolio chart and transaction history screens, watchlist UI, trade ticket UI, and polished quote freshness display are intentionally not included.
-- `recharts` is installed for a later portfolio chart; no chart is rendered yet.
+- The Trade page, Watchlist, and daily historical price chart use `stock-price` with `{ "symbol": "MSFT", "history": true }` for history requests.
+- Quote cache reuse is five minutes per symbol. This reduces Alpha Vantage calls but does not promise real-time data. Quote staleness is measured against provider trading date (24 hours); trades always fetch a fresh quote server-side and reject stale provider data.
+- Historical charts use Alpha Vantage `TIME_SERIES_DAILY` compact output and display only valid provider points. Provider plan and rate limits determine availability.
 - Supabase/Vercel project setup and secrets require operator-provided credentials.
