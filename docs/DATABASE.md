@@ -6,7 +6,7 @@ Apply `supabase/migrations/001_initial_schema.sql` to a Supabase project. Authen
 
 - `profiles`: one row per Auth user. `initial_balance` is constrained to USD 10,000 and `cash_balance` starts at the same value. Clients can read their profile and update only `nickname`; a trigger rejects direct balance/initial grant edits.
 - `watchlist`: user-owned uppercase ticker symbols, unique per user and symbol.
-- `transactions`: append-only BUY/SELL history with positive fractional quantity and execution price, `total_amount`, `realized_pl`, and `executed_at`. Clients have read-only grants.
+- `transactions`: append-only BUY/SELL history with positive fractional quantity and execution price. `total_amount` is computed by PostgreSQL as `round(quantity * price, 6)`; `realized_pl` and `executed_at` are stored alongside it. Clients have read-only grants.
 - `positions`: one row per user/symbol with positive open quantity and weighted `average_buy_price`. Clients have read-only grants.
 - `portfolio_snapshots`: one row per successful trade, with cash, positions value, total value, realized and unrealized P/L, and `recorded_at`. Clients have read-only grants; there is no snapshot-creation RPC.
 - `market_prices`: latest positive price, provider `price_time`, and cache `fetched_at` by symbol. Authenticated users can read only. Edge Functions update through the narrow secret-checked `cache_market_price` function.
