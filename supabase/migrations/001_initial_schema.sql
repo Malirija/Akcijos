@@ -9,7 +9,7 @@ create table public.profiles (
   created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
 create table public.watchlist (
-  id uuid primary key default gen_random_uuid(), user_id uuid not null references public.profiles(id) on delete cascade,
+  id uuid primary key default gen_random_uuid(), user_id uuid not null default auth.uid() references public.profiles(id) on delete cascade,
   symbol text not null check (symbol ~ '^[A-Z][A-Z0-9.]{0,9}$'), created_at timestamptz not null default now(), unique(user_id,symbol)
 );
 create table public.transactions (
