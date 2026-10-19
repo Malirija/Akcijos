@@ -17,7 +17,7 @@ Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in `.env` (the Supab
 
 ## Supabase configuration
 
-1. Apply `supabase/migrations/001_initial_schema.sql` using `supabase db push` after linking the project, or paste it into the Supabase SQL editor. The migration creates the schema, RLS policies, auth trigger, and RPCs.
+1. Apply all migrations, including `supabase/migrations/002_watchlist_user_default.sql`, using `supabase db push` after linking the project, or apply them in order in the Supabase SQL editor. The migrations create the schema, RLS policies, auth trigger, and RPCs. Migration 002 fixes existing installations so watchlist inserts derive `user_id` from the authenticated JWT.
 2. Enable email/password sign-in in Supabase Auth. Configure the allowed redirect URLs for local and deployed app URLs.
 3. Set Edge Function secret `ALPHA_VANTAGE_API_KEY` with `supabase secrets set ALPHA_VANTAGE_API_KEY=...`. Supabase provides `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` to Edge Functions; the service-role key is used only server-side for restricted database RPCs and must never be exposed to browser code.
 4. Deploy `stock-price` and `execute-trade` with JWT verification enabled (the default): `supabase functions deploy stock-price` and `supabase functions deploy execute-trade`. For local development, serve the functions with the same JWT verification and local Supabase secrets.

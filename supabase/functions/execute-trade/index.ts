@@ -1,3 +1,4 @@
+/// <reference lib="deno.ns" />
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { cacheQuote, corsHeaders, errorResponse, fetchQuote, json, MarketError, normalizeSymbol, requireUser, validSymbol } from '../_shared/market.ts';
 Deno.serve(async (req) => {

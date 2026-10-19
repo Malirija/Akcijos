@@ -1,3 +1,4 @@
+/// <reference lib="deno.ns" />
 import { MarketError, errorResponse, fetchDailyHistory, fetchQuote, json, normalizeSymbol, recentCachedQuote, requireUser, validSymbol } from '../_shared/market.ts';
 
 Deno.serve(async (req) => {

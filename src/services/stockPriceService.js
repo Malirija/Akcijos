@@ -27,8 +27,12 @@ export async function addWatchlistSymbol(symbol) {
   if (!supabase) throw new Error('Supabase is not configured.');
   const normalized = symbol.trim().toUpperCase();
   if (!/^[A-Z][A-Z0-9.]{0,9}$/.test(normalized)) throw new Error('Enter a valid stock symbol.');
-  const { data, error } = await supabase.from('watchlist').insert({ symbol: normalized }).select('id,symbol,created_at').single();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError) throw authError;
+  if (!user) throw new Error('Sign in before adding a stock to your watchlist.');
+  const { data, error } = await supabase.from('watchlist').insert({ user_id: user.id, symbol: normalized }).select('id,symbol,created_at').single();
   if (error?.code === '23505') throw new Error(`${normalized} is already on your watchlist.`);
+  if (error?.code === '42501') throw new Error('Supabase denied the watchlist insert. Apply migration 002_watchlist_user_default.sql and confirm you are signed in to the expected project.');
   if (error) throw error;
   return data;
 }
