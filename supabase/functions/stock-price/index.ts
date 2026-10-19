@@ -1,15 +1,16 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { cacheQuote, corsHeaders, fetchQuote, json, validSymbol } from '../_shared/market.ts';
+import { MarketError, errorResponse, fetchDailyHistory, fetchQuote, json, normalizeSymbol, recentCachedQuote, requireUser, validSymbol } from '../_shared/market.ts';
+
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
-  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
-  const auth = req.headers.get('Authorization'); if (!auth) return json({ error: 'Authentication required' }, 401);
-  const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: auth } }, auth: { persistSession: false } });
-  const { data: { user }, error: authError } = await supabase.auth.getUser(); if (authError || !user) return json({ error: 'Invalid session' }, 401);
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type', 'Access-Control-Allow-Methods': 'POST, OPTIONS' } });
+  if (req.method !== 'POST') return json({ error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed.' } }, 405);
   try {
-    const body = await req.json(); if (!validSymbol(body.symbol)) return json({ error: 'Invalid symbol' }, 400);
-    const quote = await fetchQuote(body.symbol.toUpperCase());
-    await cacheQuote(quote);
-    return json(quote);
-  } catch (error) { return json({ error: error instanceof Error ? error.message : 'Unable to fetch quote' }, 502); }
+    await requireUser(req);
+    let body: any;
+    try { body = await req.json(); } catch { throw new MarketError('INVALID_REQUEST', 'Request body must be valid JSON.', 400); }
+    if (!validSymbol(body?.symbol)) throw new MarketError('INVALID_SYMBOL', 'Enter a valid stock symbol.', 400);
+    const symbol = normalizeSymbol(body.symbol);
+    if (body.history === true) return json(await fetchDailyHistory(symbol));
+    const cached = await recentCachedQuote(symbol);
+    return json(cached || await fetchQuote(symbol));
+  } catch (error) { return errorResponse(error); }
 });
