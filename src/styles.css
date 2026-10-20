@@ -54,3 +54,13 @@ body{background:var(--canvas)}
 .watch-item{transition:background-color .16s ease,transform .16s ease}.watch-item:hover{background:#f8faf6;transform:translateX(2px)}
 .pulse{animation:market-pulse 2.2s ease-in-out infinite}@keyframes market-pulse{0%,100%{box-shadow:0 0 0 0 #a8d24766}50%{box-shadow:0 0 0 5px #a8d24700}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+/* Ensure the bilateral market artwork sits above the page canvas */
+.market-side-art{position:fixed!important;z-index:-1!important;inset:68px 0 40px!important;opacity:1!important;background-color:transparent!important;background-image:url('/market-side-pattern.svg'),url('/market-side-pattern.svg')!important;background-position:left center,right center!important;background-repeat:no-repeat!important;background-size:min(25vw,380px) 100%,min(25vw,380px) 100%!important;mask-image:none!important}
+.shell>.topbar,.shell>.dashboard,.shell>footer{position:relative;z-index:1}
+@media(max-width:1200px){.market-side-art{opacity:.74!important;background-size:100% 100%,min(20vw,260px) 100%,min(20vw,260px) 100%!important}}
+@media(max-width:760px){.market-side-art{inset:62px 0 38px!important;opacity:.48!important;background-size:100% 100%,110px 100%,110px 100%!important}}
+.market-side-art{position:fixed!important;z-index:0!important;inset:68px 0 40px!important;opacity:.8!important;background-image:url('/market-side-pattern.svg'),url('/market-side-pattern.svg')!important;background-position:left center,right center!important;background-repeat:no-repeat!important;background-size:min(25vw,380px) 100%,min(25vw,380px) 100%!important;mask-image:none!important}
+.shell>.topbar,.shell>.dashboard,.shell>footer{position:relative;z-index:1}
+@media(max-width:1200px){.market-side-art{opacity:.64!important;background-size:min(21vw,270px) 100%,min(21vw,270px) 100%!important}}
+@media(max-width:760px){.market-side-art{inset:62px 0 38px!important;opacity:.42!important;background-size:125px 100%,125px 100%!important}}
