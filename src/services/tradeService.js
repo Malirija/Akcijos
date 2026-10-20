@@ -11,5 +11,8 @@ export async function executeTrade({ symbol, side, quantity }) {
     throw new Error(error.message || 'Trade request failed.');
   }
   if (data?.error) throw new Error(data.error.message || 'Trade request failed.');
-  return data;
+  if (!data?.trade || typeof data.trade !== 'object') {
+    throw new Error('Trade service returned an invalid confirmation.');
+  }
+  return { ...data.trade, quote: data.quote ?? null };
 }
