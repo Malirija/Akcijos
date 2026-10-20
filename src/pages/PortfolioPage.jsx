@@ -4,6 +4,7 @@ import { getPortfolioSummary, getPositions, getPositionPrices, getSnapshots } fr
 import PortfolioChart from '../components/PortfolioChart.jsx';
 import ProfitLossChart from '../components/ProfitLossChart.jsx';
 import { formatDateTime, formatQuantity, formatUSD } from '../utils/formatters.js';
+import MarketIcon from '../components/MarketIcon.jsx';
 
 const quoteIsStale = quote => {
   if (!quote?.fetched_at) return true;
@@ -74,7 +75,7 @@ export default function PortfolioPage() {
       const quantity = Number(position.quantity);
       const marketValue = hasQuote ? quantity * Number(quote.price) : null;
       const unrealized = hasQuote ? marketValue - quantity * Number(position.average_buy_price) : null;
-      return <tr key={position.id}><td><strong>{position.symbol}</strong></td><td>{formatQuantity(quantity)}</td><td>{formatUSD(position.average_buy_price)}</td><td>{hasQuote ? <>{formatUSD(quote.price)}<small className={`quote-label ${stale ? 'stale' : ''}`}>{stale ? 'Stale quote' : 'Current cached quote'} · {formatDateTime(quote.price_time)}</small></> : <span className="unavailable-price">Unavailable</span>}</td><td>{marketValue === null ? <span className="unavailable-price">Unavailable</span> : formatUSD(marketValue)}</td><td className={unrealized === null ? '' : unrealized >= 0 ? 'positive' : 'negative'}>{unrealized === null ? <span className="unavailable-price">Unavailable</span> : `${unrealized > 0 ? '+' : ''}${formatUSD(unrealized)}`}</td></tr>;
+      return <tr key={position.id}><td><span className="position-stock"><MarketIcon symbol={position.symbol} /><strong>{position.symbol}</strong></span></td><td>{formatQuantity(quantity)}</td><td>{formatUSD(position.average_buy_price)}</td><td>{hasQuote ? <>{formatUSD(quote.price)}<small className={`quote-label ${stale ? 'stale' : ''}`}>{stale ? 'Stale quote' : 'Current cached quote'} · {formatDateTime(quote.price_time)}</small></> : <span className="unavailable-price">Unavailable</span>}</td><td>{marketValue === null ? <span className="unavailable-price">Unavailable</span> : formatUSD(marketValue)}</td><td className={unrealized === null ? '' : unrealized >= 0 ? 'positive' : 'negative'}>{unrealized === null ? <span className="unavailable-price">Unavailable</span> : `${unrealized > 0 ? '+' : ''}${formatUSD(unrealized)}`}</td></tr>;
     })}</tbody></table>{positions.length === 0 && <div className="empty table-empty"><span className="empty-icon">↗</span><strong>Your portfolio starts here</strong><p>Once you make a virtual trade, your open positions will appear here.</p></div>}</div>
   </>;
 }

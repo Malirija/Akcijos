@@ -1,5 +1,5 @@
 import React from 'react';
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Area, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { formatDateTime, formatUSD } from '../utils/formatters.js';
 
 /** Displays persisted portfolio_snapshots; points are never synthesized. */
@@ -17,8 +17,10 @@ export default function PortfolioChart({ snapshots = [], loading = false, error 
               <CartesianGrid stroke="#edf0eb" vertical={false} />
               <XAxis dataKey="recorded_at" type="category" tickFormatter={value => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} tickLine={false} axisLine={false} minTickGap={28} />
             <YAxis dataKey="total_value" type="number" tickFormatter={formatUSD} tick={{ fontSize: 10 }} tickLine={false} axisLine={false} width={axisWidth} />
-              <Tooltip labelFormatter={formatDateTime} formatter={value => [formatUSD(value), 'Portfolio value']} contentStyle={{ borderRadius: 8, borderColor: '#e6eae4', fontSize: 12 }} />
-              <Line type="linear" dataKey="total_value" name="Portfolio value" stroke="#668c32" strokeWidth={2.5} dot={{ r: 3, fill: '#668c32' }} activeDot={{ r: 5 }} />
+              <defs><linearGradient id="portfolioFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#59a96a" stopOpacity={0.32} /><stop offset="100%" stopColor="#59a96a" stopOpacity={0.015} /></linearGradient></defs>
+              <Tooltip cursor={{ stroke: '#7fae78', strokeDasharray: '4 4' }} labelFormatter={formatDateTime} formatter={value => [formatUSD(value), 'Portfolio value']} contentStyle={{ borderRadius: 10, borderColor: '#dce9dc', background: '#ffffffed', boxShadow: '0 8px 24px #23442a18', fontSize: 12 }} />
+              <Area type="monotone" dataKey="total_value" stroke="none" fill="url(#portfolioFill)" activeDot={false} />
+              <Line type="monotone" dataKey="total_value" name="Portfolio value" stroke="#39834a" strokeWidth={3} dot={{ r: 3.5, fill: '#fff', stroke: '#39834a', strokeWidth: 2 }} activeDot={{ r: 6, fill: '#39834a', stroke: '#fff', strokeWidth: 3 }} />
             </LineChart></ResponsiveContainer></div>}
     <p className="chart-note">Each point is a portfolio snapshot recorded after a successful trade. This is not a continuous intraday valuation, so gaps between points are expected.</p>
   </section>;

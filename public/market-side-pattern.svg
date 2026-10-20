@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="900" viewBox="0 0 360 900" fill="none">
+  <defs>
+    <linearGradient id="stroke" x1="25" y1="650" x2="330" y2="190" gradientUnits="userSpaceOnUse"><stop stop-color="#83a96a" stop-opacity="0"/><stop offset=".5" stop-color="#83a96a" stop-opacity=".58"/><stop offset="1" stop-color="#6b8c54" stop-opacity=".18"/></linearGradient>
+    <pattern id="grid" width="42" height="42" patternUnits="userSpaceOnUse"><path d="M42 0H0V42" stroke="#809a70" stroke-opacity=".16"/></pattern>
+    <radialGradient id="glow"><stop stop-color="#dfead7" stop-opacity=".65"/><stop offset="1" stop-color="#edf3e9" stop-opacity="0"/></radialGradient>
+  </defs>
+  <path fill="url(#grid)" d="M0 0h360v900H0z"/><ellipse cx="190" cy="455" rx="210" ry="280" fill="url(#glow)"/>
+  <path d="M-20 642 45 591l47 17 51-86 50 21 53-115 42 14 60-101" stroke="url(#stroke)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M-20 715 37 687l54 9 49-38 54 12 51-59 51 8 82-91" stroke="#95ad84" stroke-opacity=".22" stroke-width="1.5" stroke-linecap="round"/>
+  <g fill="#82a56a" fill-opacity=".5"><circle cx="45" cy="591" r="3"/><circle cx="143" cy="522" r="3"/><circle cx="246" cy="428" r="3"/><circle cx="288" cy="442" r="3"/></g>
+</svg>

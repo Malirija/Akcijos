@@ -4,6 +4,7 @@ import { getStockPrice } from '../services/stockPriceService.js';
 import { executeTrade } from '../services/tradeService.js';
 import PriceChart from '../components/PriceChart.jsx';
 import Watchlist from '../components/Watchlist.jsx';
+import MarketIcon from '../components/MarketIcon.jsx';
 
 const currency = value => Number(value).toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 });
 export default function TradePage({ onTradeSuccess }) {
@@ -36,7 +37,7 @@ export default function TradePage({ onTradeSuccess }) {
     <div className="trade-layout"><div className="trade-main">
       <section className="trade-card"><div className="section-head trade-card-head"><div><span className="eyebrow">TRADE TICKET</span><h2>Place an order</h2></div>{profile && <span className="available-cash">Cash {currency(profile.cash_balance)}</span>}</div>
         <div className="symbol-load"><label>Stock symbol<input value={symbol} onChange={e => { setSymbol(e.target.value.toUpperCase()); setQuote(null); }} maxLength={10} placeholder="e.g. AAPL" onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), loadQuote())} /></label><button className="secondary" onClick={() => loadQuote()} disabled={quoteBusy || !symbol.trim()}>{quoteBusy ? 'Loading…' : 'Load quote'}</button></div>
-        {quote && <div className="quote-panel"><div><span className="eyebrow">LATEST AVAILABLE PRICE · USD</span><strong>{currency(quote.price)}</strong></div><div className="quote-times"><span>Quote date <b>{new Date(quote.price_time).toLocaleString()}</b></span><span>Fetched <b>{new Date(quote.fetched_at).toLocaleString()}</b></span></div>{quote.stale && <div className="notice stale-notice">This provider quote is more than 24 hours old. Refresh before trading.</div>}</div>}
+        {quote && <div className="quote-panel"><div className="quote-main"><MarketIcon symbol={quote.symbol} className="quote-market-icon" /><span className="eyebrow">LATEST AVAILABLE PRICE · USD</span><strong>{currency(quote.price)}</strong></div><div className="quote-times"><span>Quote date <b>{new Date(quote.price_time).toLocaleString()}</b></span><span>Fetched <b>{new Date(quote.fetched_at).toLocaleString()}</b></span></div>{quote.stale && <div className="notice stale-notice">This provider quote is more than 24 hours old. Refresh before trading.</div>}</div>}
         <form className="order-form" onSubmit={submit}><div className="side-toggle" aria-label="Trade side"><button type="button" className={side === 'BUY' ? 'selected buy' : ''} onClick={() => setSide('BUY')}>BUY</button><button type="button" className={side === 'SELL' ? 'selected sell' : ''} onClick={() => setSide('SELL')}>SELL</button></div>
           <label>Quantity <span className="muted">(fractional shares supported)</span><input type="number" inputMode="decimal" min="0.000001" max="1000000000" step="any" value={quantity} onChange={e => setQuantity(e.target.value)} placeholder="0.00" /></label>
           <div className="estimate"><span>Estimated total</span><strong>{estimatedTotal === null ? '—' : currency(estimatedTotal)}</strong><small>Final price is set from a fresh server verified quote.</small></div>
