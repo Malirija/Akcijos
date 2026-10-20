@@ -49,6 +49,6 @@ No database, Auth, Alpha Vantage, deployment, or Edge Function integration has b
 - Alpha Vantage quote freshness and request limits depend on the selected provider plan.
 - A quote-cache failure rejects quote and trade operations instead of silently substituting a stale execution price.
 - The Trade page, Watchlist, and daily historical price chart use `stock-price` with `{ "symbol": "MSFT", "history": true }` for history requests.
-- Quote cache reuse is five minutes per symbol. This reduces Alpha Vantage calls but does not promise real-time data. Quote staleness is measured against provider trading date (24 hours); trades always fetch a fresh quote server-side and reject stale provider data.
-- Historical charts use Alpha Vantage `TIME_SERIES_DAILY` compact output and display only valid provider points. Provider plan and rate limits determine availability.
+- Quote cache reuse is 24 hours per symbol, and daily history responses are cached for 24 hours. This reduces Alpha Vantage calls but does not promise real-time data. Quote staleness is measured against provider trading date (24 hours); trades always fetch a fresh quote server-side and reject stale provider data.
+- Historical charts use Alpha Vantage `TIME_SERIES_DAILY` compact output and display only valid provider points. History cache data is shared server-side and refreshed after 24 hours. Provider plan and rate limits still determine availability.
 - Supabase/Vercel project setup and secrets require operator-provided credentials.
