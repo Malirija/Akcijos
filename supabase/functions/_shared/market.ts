@@ -49,6 +49,8 @@ export async function fetchQuote(symbol: string) {
 }
 
 export async function fetchDailyHistory(symbol: string) {
+  const cached = await recentCachedHistory(symbol);
+  if (cached) return cached;
   const payload = await providerRequest({ function: 'TIME_SERIES_DAILY', symbol, outputsize: 'compact' });
   const series = payload['Time Series (Daily)'];
   if (!series || typeof series !== 'object') throw new MarketError('NO_DATA', 'Daily price history is not currently available for this symbol.', 404);
@@ -56,7 +58,29 @@ export async function fetchDailyHistory(symbol: string) {
     .filter(point => /^\d{4}-\d{2}-\d{2}$/.test(point.date) && Number.isFinite(point.price) && point.price > 0)
     .sort((a, b) => a.date.localeCompare(b.date));
   if (!data.length) throw new MarketError('NO_DATA', 'Daily price history is not currently available for this symbol.', 404);
-  return { symbol, data, fetched_at: new Date().toISOString(), source: 'Alpha Vantage' };
+  const result = { symbol, data, fetched_at: new Date().toISOString(), source: 'Alpha Vantage' };
+  await cacheHistory(result);
+  return result;
+}
+
+async function cacheHistory(history: { symbol: string; data: { date: string; price: number }[]; fetched_at: string }) {
+  const client = marketCacheClient();
+  if (!client) throw new MarketError('CONFIGURATION_ERROR', 'Market data storage is not configured.', 503);
+  const { error } = await client.from('market_history_cache').upsert({ symbol: history.symbol, data: history.data, fetched_at: history.fetched_at }, { onConflict: 'symbol' });
+  if (error) throw new MarketError('CACHE_ERROR', 'Price history could not be safely stored. Please try again.', 503);
+}
+
+async function recentCachedHistory(symbol: string) {
+  const client = marketCacheClient();
+  if (!client) return null;
+  const { data, error } = await client.from('market_history_cache').select('symbol,data,fetched_at').eq('symbol', symbol).maybeSingle();
+  if (error || !data || Date.now() - Date.parse(data.fetched_at) > 24 * 60 * 60 * 1000) return null;
+  return { ...data, source: 'Alpha Vantage' };
+}
+
+function marketCacheClient() {
+  const url = Deno.env.get('SUPABASE_URL'); const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  return url && key ? createClient(url, key, { auth: { persistSession: false } }) : null;
 }
 
 export async function cacheQuote(quote: { symbol: string; price: number; price_time: string; fetched_at: string }) {
@@ -68,14 +92,14 @@ export async function cacheQuote(quote: { symbol: string; price: number; price_t
   if (error) throw new MarketError('CACHE_ERROR', 'The quote could not be safely recorded. Please try again.', 503);
 }
 
-// Reuse a valid quote for five minutes to reduce Alpha Vantage calls. This server-side
+// Reuse a valid quote for 24 hours to reduce Alpha Vantage calls. This server-side
 // cache window does not imply real-time data; provider price_time and fetched_at remain distinct.
 export async function recentCachedQuote(symbol: string) {
   const url = Deno.env.get('SUPABASE_URL'); const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   if (!url || !key) return null;
   const client = createClient(url, key, { auth: { persistSession: false } });
   const { data } = await client.from('market_prices').select('symbol,price,price_time,fetched_at').eq('symbol', symbol).maybeSingle();
-  if (!data || Date.now() - Date.parse(data.fetched_at) > 5 * 60 * 1000) return null;
+  if (!data || Date.now() - Date.parse(data.fetched_at) > 24 * 60 * 60 * 1000) return null;
   return { ...data, price: Number(data.price), stale: stale(data.price_time), source: 'Alpha Vantage' };
 }
 

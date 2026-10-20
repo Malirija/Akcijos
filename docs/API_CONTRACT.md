@@ -38,6 +38,6 @@ Each method returns the selected Supabase data and throws the Supabase error. Re
 ## Edge Function request contracts
 
 - `POST /functions/v1/execute-trade` JSON `{ "symbol": "MSFT", "side": "BUY", "quantity": 1.25 }`; requires Supabase user JWT. Browser supplied price and user ID are ignored/not accepted.
-- `POST /functions/v1/stock-price` JSON `{ "symbol": "MSFT" }`; requires Supabase user JWT.
+- `POST /functions/v1/stock-price` JSON `{ "symbol": "MSFT" }`; requires Supabase user JWT. Quote and history responses reuse the shared database cache for 24 hours.
 
 The Edge Functions validate the caller JWT with Supabase Auth. Database quote-cache and trade writes use the Supabase service role only inside Edge Function runtime; clients have no EXECUTE grant on those server RPCs. Never expose the service-role key to the browser.
