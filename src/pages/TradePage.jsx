@@ -10,6 +10,7 @@ export default function TradePage({ onTradeSuccess }) {
   const [symbol, setSymbol] = useState(''); const [quantity, setQuantity] = useState(''); const [side, setSide] = useState('BUY');
   const [quote, setQuote] = useState(null); const [quoteBusy, setQuoteBusy] = useState(false); const [tradeBusy, setTradeBusy] = useState(false);
   const [error, setError] = useState(''); const [success, setSuccess] = useState(null); const [profile, setProfile] = useState(null); const [watchRefresh, setWatchRefresh] = useState(0);
+  const [pendingOrder, setPendingOrder] = useState(false);
   useEffect(() => { getProfile().then(setProfile).catch(() => {}); }, []);
   async function loadQuote(forSymbol = symbol) { const normalized = forSymbol.trim().toUpperCase(); if (!normalized) { setError('Enter a stock symbol first.'); return; } setSymbol(normalized); setError(''); setSuccess(null); setQuoteBusy(true); setQuote(null); try { setQuote(await getStockPrice(normalized)); } catch (e) { setError(e.message || 'Could not load a quote.'); } finally { setQuoteBusy(false); } }
   function selectSymbol(value) { setSymbol(value); loadQuote(value); }
@@ -21,8 +22,10 @@ export default function TradePage({ onTradeSuccess }) {
     if (!validQuantity) { setError('Quantity must be a number greater than zero and within the supported range.'); return; }
     if (!quote || quote.symbol !== symbol.trim().toUpperCase()) { setError('Load a valid quote before submitting a trade.'); return; }
     if (quote.stale) { setError('This quote is stale. Refresh it before placing a trade.'); return; }
-    const confirmed = window.confirm(`${side} ${parsedQuantity} ${symbol.toUpperCase()} at an estimated ${currency(quote.price)} per share (${currency(estimatedTotal)}). The server will verify a fresh execution quote. Continue?`);
-    if (!confirmed) return;
+    setPendingOrder(true);
+  }
+  async function confirmTrade() {
+    setPendingOrder(false);
     setTradeBusy(true);
     try { const result = await executeTrade({ symbol: symbol.trim().toUpperCase(), side, quantity: parsedQuantity }); setSuccess(result); setQuantity(''); setWatchRefresh(key => key + 1); await Promise.allSettled([loadQuote(symbol), getProfile().then(setProfile), onTradeSuccess?.()]); }
     catch (e) { setError(e.message || 'Trade failed. Your portfolio was not changed.'); }
@@ -43,5 +46,14 @@ export default function TradePage({ onTradeSuccess }) {
       </section>
       <PriceChart symbol={quote?.symbol || ''} />
     </div><aside><Watchlist onSelect={selectSymbol} refreshKey={watchRefresh} /></aside></div>
+    {pendingOrder && <div className="trade-dialog-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) setPendingOrder(false); }}>
+      <section className="trade-dialog" role="dialog" aria-modal="true" aria-labelledby="trade-dialog-title" aria-describedby="trade-dialog-description">
+        <div className={`trade-dialog-icon ${side.toLowerCase()}`}>{side === 'BUY' ? '+' : '−'}</div>
+        <span className="eyebrow">ORDER REVIEW</span><h2 id="trade-dialog-title">Confirm {side.toLowerCase()} order</h2>
+        <p id="trade-dialog-description">Review the estimate before sending your order. The server will verify a fresh execution quote.</p>
+        <div className="trade-dialog-summary"><div><span>Order</span><strong>{side} {symbol.toUpperCase()}</strong></div><div><span>Quantity</span><strong>{parsedQuantity.toLocaleString('en-US')} shares</strong></div><div><span>Estimated price</span><strong>{currency(quote?.price)} / share</strong></div><div className="total"><span>Estimated total</span><strong>{currency(estimatedTotal)}</strong></div></div>
+        <div className="trade-dialog-actions"><button className="dialog-cancel" onClick={() => setPendingOrder(false)}>Go back</button><button className={`dialog-confirm ${side.toLowerCase()}`} onClick={confirmTrade}>Confirm {side.toLowerCase()}</button></div>
+      </section>
+    </div>}
   </main>;
 }

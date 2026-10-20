@@ -16,6 +16,7 @@ export default function ProfitLossChart({ snapshots = [], loading = false, error
       && (snapshot.realized_pl !== null || snapshot.unrealized_pl !== null));
   const hasRealized = chronological.some(point => point.realized_pl !== null);
   const hasUnrealized = chronological.some(point => point.unrealized_pl !== null);
+  const axisWidth = Math.min(118, Math.max(82, ...chronological.flatMap(point => [point.realized_pl, point.unrealized_pl].filter(value => value !== null).map(value => formatUSD(value).length * 7 + 12))));
 
   return <section className="chart-card profit-loss-chart" aria-labelledby="profit-loss-chart-heading">
     <div className="chart-title"><div><span className="eyebrow">PERFORMANCE</span><h2 id="profit-loss-chart-heading">Profit / loss</h2></div><span className="chart-count">{chronological.length} snapshots</span></div>
@@ -25,7 +26,7 @@ export default function ProfitLossChart({ snapshots = [], loading = false, error
           : <div className="chart-wrap"><ResponsiveContainer width="100%" height="100%"><LineChart data={chronological} margin={{ top: 12, right: 10, left: 4, bottom: 2 }}>
             <CartesianGrid stroke="#edf0eb" vertical={false} />
             <XAxis dataKey="recorded_at" type="category" tickFormatter={value => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} tickLine={false} axisLine={false} minTickGap={28} />
-            <YAxis type="number" tickFormatter={formatUSD} tickLine={false} axisLine={false} width={82} />
+            <YAxis type="number" tickFormatter={formatUSD} tick={{ fontSize: 10 }} tickLine={false} axisLine={false} width={axisWidth} />
             <ReferenceLine y={0} stroke="#9aa39a" strokeDasharray="4 4" />
             <Tooltip labelFormatter={formatDateTime} formatter={value => value == null ? ['Unavailable', ''] : [formatUSD(value), '']} contentStyle={{ borderRadius: 8, borderColor: '#e6eae4', fontSize: 12 }} />
             <Legend />
