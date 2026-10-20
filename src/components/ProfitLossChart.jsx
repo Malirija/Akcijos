@@ -1,5 +1,5 @@
 import React from 'react';
-import { CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Area, CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { formatDateTime, formatUSD } from '../utils/formatters.js';
 const numericOrNull = value => value === null || value === undefined || value === '' || !Number.isFinite(Number(value)) ? null : Number(value);
 
@@ -28,10 +28,13 @@ export default function ProfitLossChart({ snapshots = [], loading = false, error
             <XAxis dataKey="recorded_at" type="category" tickFormatter={value => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} tickLine={false} axisLine={false} minTickGap={28} />
             <YAxis type="number" tickFormatter={formatUSD} tick={{ fontSize: 10 }} tickLine={false} axisLine={false} width={axisWidth} />
             <ReferenceLine y={0} stroke="#9aa39a" strokeDasharray="4 4" />
-            <Tooltip labelFormatter={formatDateTime} formatter={value => value == null ? ['Unavailable', ''] : [formatUSD(value), '']} contentStyle={{ borderRadius: 8, borderColor: '#e6eae4', fontSize: 12 }} />
+            <defs><linearGradient id="realizedFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#32a879" stopOpacity={0.3} /><stop offset="100%" stopColor="#32a879" stopOpacity={0.02} /></linearGradient><linearGradient id="unrealizedFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#8270d5" stopOpacity={0.24} /><stop offset="100%" stopColor="#8270d5" stopOpacity={0.02} /></linearGradient></defs>
+            <Tooltip cursor={{ stroke: '#95a39a', strokeDasharray: '4 4' }} labelFormatter={formatDateTime} formatter={value => value == null ? ['Unavailable', ''] : [formatUSD(value), '']} contentStyle={{ borderRadius: 10, borderColor: '#dce9e4', background: '#ffffffed', boxShadow: '0 8px 24px #23392718', fontSize: 12 }} />
             <Legend />
-            {hasRealized && <Line type="linear" dataKey="realized_pl" name="Realized P/L" stroke="#668c32" strokeWidth={2.3} dot={{ r: 2.5 }} activeDot={{ r: 5 }} connectNulls={false} />}
-            {hasUnrealized && <Line type="linear" dataKey="unrealized_pl" name="Unrealized P/L" stroke="#527c85" strokeWidth={2.3} dot={{ r: 2.5 }} activeDot={{ r: 5 }} connectNulls={false} />}
+            {hasRealized && <Area type="monotone" dataKey="realized_pl" name="Realized P/L" stroke="none" fill="url(#realizedFill)" connectNulls={false} activeDot={false} />}
+            {hasUnrealized && <Area type="monotone" dataKey="unrealized_pl" name="Unrealized P/L" stroke="none" fill="url(#unrealizedFill)" connectNulls={false} activeDot={false} />}
+            {hasRealized && <Line type="monotone" dataKey="realized_pl" name="Realized P/L" stroke="#17865e" strokeWidth={2.8} dot={{ r: 3, fill: '#fff', stroke: '#17865e', strokeWidth: 2 }} activeDot={{ r: 5, fill: '#17865e', stroke: '#fff', strokeWidth: 2 }} connectNulls={false} />}
+            {hasUnrealized && <Line type="monotone" dataKey="unrealized_pl" name="Unrealized P/L" stroke="#705cc6" strokeWidth={2.8} dot={{ r: 3, fill: '#fff', stroke: '#705cc6', strokeWidth: 2 }} activeDot={{ r: 5, fill: '#705cc6', stroke: '#fff', strokeWidth: 2 }} connectNulls={false} />}
           </LineChart></ResponsiveContainer></div>}
     <p className="chart-note">Realized P/L accumulates from completed SELL transactions. Unrealized P/L reflects current positions valued at the latest known prices. Missing snapshot values remain gaps in the chart.</p>
   </section>;

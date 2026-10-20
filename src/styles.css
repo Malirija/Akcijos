@@ -28,3 +28,29 @@
 .trade-dialog-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:20px}.trade-dialog-actions button{padding:12px;border-radius:8px;font:600 12px 'DM Sans',sans-serif;cursor:pointer}.dialog-cancel{border:1px solid #dfe5dc;background:#fff;color:#536254}.dialog-confirm{border:1px solid #26382b;background:#26382b;color:white}.dialog-confirm.sell{border-color:#a74f41;background:#a74f41}
 @keyframes trade-dialog-in{from{opacity:0;transform:translateY(7px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
 @media(max-width:700px){.trade-dialog{padding:22px 19px;border-radius:13px}}
+
+/* Market desk visual polish */
+:root{--ink:#1f2b23;--forest:#24382b;--moss:#668c32;--line:#e5eae3;--surface:#fff;--canvas:#f4f6f2}
+body{background:var(--canvas)}
+.topbar{box-shadow:0 2px 12px #20332308}
+.dashboard{max-width:1080px}
+.welcome{position:relative;padding:23px 25px;border:1px solid #e3e9e1;border-radius:16px;background:linear-gradient(112deg,#fff 0%,#fbfcf9 68%,#f0f5e8 100%);box-shadow:0 8px 24px #23392708;overflow:hidden}
+.welcome{background-image:linear-gradient(90deg,#fff 0%,#fff 45%,#ffffffd9 72%,#ffffff91 100%),url('/market-background.svg');background-size:cover;background-position:center 53%}
+.welcome:after{content:"";position:absolute;right:135px;top:-55px;width:185px;height:185px;border:1px solid #dfe9d7;border-radius:50%;box-shadow:0 0 0 18px #edf3e866,0 0 0 38px #f3f7ef80;pointer-events:none}
+.welcome>div{position:relative;z-index:1}.welcome h1{color:var(--forest)}
+.market-pill{display:flex;align-items:center;gap:7px;position:relative;z-index:2;box-shadow:0 3px 10px #1c2a1a0a}
+.coin-stack{position:relative;width:31px;height:24px;margin-left:4px}.coin-stack i{position:absolute;width:17px;height:17px;border-radius:50%;border:2px solid #fff;background:linear-gradient(145deg,#e7c96e,#b58b35);box-shadow:0 2px 4px #4e3a1230}.coin-stack i:first-child{left:0;top:5px}.coin-stack i:nth-child(2){left:7px;top:1px;background:linear-gradient(145deg,#f3dfa0,#c5a54c)}.coin-stack i:last-child{left:14px;top:6px;background:linear-gradient(145deg,#d9b856,#a87d2c)}
+.metric-card,.chart-card,.trade-card,.watchlist-card,.settings-card{border-color:var(--line);box-shadow:0 5px 18px #23392708}
+.metric-card,.chart-card,.trade-card,.watchlist-card,.settings-card{transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}
+.metric-card:hover,.chart-card:hover,.trade-card:hover,.watchlist-card:hover,.settings-card:hover{transform:translateY(-2px);border-color:#d3dfcb;box-shadow:0 12px 26px #23392712}
+.metric-card{border-radius:14px}.chart-card,.trade-card,.watchlist-card{border-radius:14px}.section-head h2,.chart-title h2{color:var(--forest)}
+.market-icon{width:33px;height:33px;flex:0 0 33px;display:inline-grid;place-items:center;border-radius:10px;background:#edf1eb;color:#556552;font:700 15px Manrope,sans-serif;box-shadow:inset 0 0 0 1px #1726170a}.market-icon.apple{background:#eff0f1;color:#30343a}.market-icon.microsoft{background:#f1f4f7;color:#56616d}.market-icon.google{background:#f5efe8;color:#b76538}.market-icon.amazon{background:#f5f0e7;color:#9b6929}.market-icon.meta{background:#eaf2fb;color:#3275bd;font-size:22px}.market-icon.nvidia{background:#edf5e8;color:#5b8d35}.market-icon.tesla{background:#faeeec;color:#c3483e}.market-icon.bitcoin{background:#fff3e4;color:#db8a27}.market-icon.ethereum{background:#edf0fa;color:#6474ad}.watch-stock,.position-stock{display:inline-flex;align-items:center;gap:9px}.watch-stock .market-icon{width:30px;height:30px;flex-basis:30px;font-size:13px}.watch-symbol{font-weight:700}.position-stock strong{font-weight:700}
+.quote-main{display:grid;grid-template-columns:38px 1fr;align-items:center;gap:2px 10px}.quote-main .market-icon{grid-row:span 2;width:38px;height:38px;flex-basis:38px}.quote-main .eyebrow,.quote-main strong{grid-column:2}.quote-panel{border:1px solid #e8ede5}
+.trade-card-head{padding-bottom:14px;border-bottom:1px solid #edf0eb}.available-cash{border:1px solid #e4ebdc}
+@media(max-width:700px){.welcome{padding:19px;border-radius:13px}.welcome:after{right:20px;opacity:.55}.market-pill{font-size:9px}.coin-stack{transform:scale(.88);transform-origin:right center}.quote-main{grid-template-columns:34px 1fr}.quote-main .market-icon{width:34px;height:34px;flex-basis:34px}}
+.market-icon{transition:transform .2s ease,box-shadow .2s ease}.watch-item:hover .market-icon,.position-stock:hover .market-icon{transform:rotate(-5deg) scale(1.08);box-shadow:0 5px 12px #24382b1b}
+.primary,.secondary,.dialog-confirm,.dialog-cancel,.side-toggle button,.period-picker button,.filter-tabs button{transition:transform .16s ease,box-shadow .16s ease,background-color .16s ease}
+.primary:hover:not(:disabled),.secondary:hover:not(:disabled),.dialog-confirm:hover,.dialog-cancel:hover{transform:translateY(-1px);box-shadow:0 5px 12px #24382b20}
+.watch-item{transition:background-color .16s ease,transform .16s ease}.watch-item:hover{background:#f8faf6;transform:translateX(2px)}
+.pulse{animation:market-pulse 2.2s ease-in-out infinite}@keyframes market-pulse{0%,100%{box-shadow:0 0 0 0 #a8d24766}50%{box-shadow:0 0 0 5px #a8d24700}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}

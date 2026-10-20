@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { addWatchlistSymbol, getStockPrice, getWatchlist, removeWatchlistSymbol } from '../services/stockPriceService.js';
+import MarketIcon from './MarketIcon.jsx';
 
 const money = value => `$${Number(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 export default function Watchlist({ onSelect, refreshKey = 0 }) {
@@ -21,7 +22,7 @@ export default function Watchlist({ onSelect, refreshKey = 0 }) {
     {error && <div className="notice">{error}</div>}
     {loading ? <div className="chart-state">Loading watchlist…</div> : !items.length ? <div className="chart-state">Your watchlist is empty. Add a symbol to track it here.</div> :
       <div className="watch-items">{items.map(item => { const status = quotes[item.symbol]; const quote = status?.quote; return <button className="watch-item" key={item.id} onClick={() => onSelect(item.symbol)}>
-        <span className="watch-symbol">{item.symbol}</span><span className="watch-quote">{quote ? <><strong>{money(quote.price)}</strong>{quote.stale && <small className="stale">Stale quote</small>}</> : <small>{status?.error || 'Loading quote…'}</small>}</span>
+        <span className="watch-stock"><MarketIcon symbol={item.symbol} /><span className="watch-symbol">{item.symbol}</span></span><span className="watch-quote">{quote ? <><strong>{money(quote.price)}</strong>{quote.stale && <small className="stale">Stale quote</small>}</> : <small>{status?.error || 'Loading quote…'}</small>}</span>
         <span className="watch-choose">View</span><span className="watch-remove" role="button" tabIndex={0} aria-label={`Remove ${item.symbol}`} onClick={e => remove(e, item.id)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') remove(e, item.id); }}>×</span>
       </button>; })}</div>}
   </section>;
