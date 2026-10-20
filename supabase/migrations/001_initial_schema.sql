@@ -1,47 +1,147 @@
 -- Stock Trading Simulator schema. Apply with `supabase db push` or the Supabase SQL editor.
+-- This migration is intentionally re-runnable: it adds missing columns, replaces triggers,
+-- functions, policies, and grants, and does not drop application tables or their existing rows.
 create extension if not exists pgcrypto;
 
-create table public.profiles (
+create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   nickname text not null check (char_length(nickname) between 1 and 40),
   initial_balance numeric(18,6) not null default 10000 check (initial_balance = 10000),
   cash_balance numeric(18,6) not null default 10000 check (cash_balance >= 0),
   created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
-create table public.watchlist (
+create table if not exists public.watchlist (
   id uuid primary key default gen_random_uuid(), user_id uuid not null default auth.uid() references public.profiles(id) on delete cascade,
   symbol text not null check (symbol ~ '^[A-Z][A-Z0-9.]{0,9}$'), created_at timestamptz not null default now(), unique(user_id,symbol)
 );
-create table public.transactions (
+create table if not exists public.transactions (
   id uuid primary key default gen_random_uuid(), user_id uuid not null references public.profiles(id) on delete cascade,
   symbol text not null check (symbol ~ '^[A-Z][A-Z0-9.]{0,9}$'), side text not null check (side in ('BUY','SELL')),
   quantity numeric(18,6) not null check (quantity > 0), price numeric(18,6) not null check (price > 0),
-  total_amount numeric(18,6) not null check (total_amount > 0), realized_pl numeric(18,6) not null default 0,
+  total_amount numeric(18,6) generated always as (round(quantity * price, 6)) stored,
+  realized_pl numeric(18,6) not null default 0,
   executed_at timestamptz not null default now()
 );
-create table public.positions (
+create table if not exists public.positions (
   id uuid primary key default gen_random_uuid(), user_id uuid not null references public.profiles(id) on delete cascade,
   symbol text not null check (symbol ~ '^[A-Z][A-Z0-9.]{0,9}$'), quantity numeric(18,6) not null check (quantity > 0),
   average_buy_price numeric(18,6) not null check (average_buy_price > 0), updated_at timestamptz not null default now(), unique(user_id,symbol)
 );
-create table public.portfolio_snapshots (
+create table if not exists public.portfolio_snapshots (
   id uuid primary key default gen_random_uuid(), user_id uuid not null references public.profiles(id) on delete cascade,
   cash_balance numeric(18,6) not null check (cash_balance >= 0), positions_value numeric(18,6) not null check (positions_value >= 0),
   total_value numeric(18,6) not null, realized_pl numeric(18,6) not null, unrealized_pl numeric(18,6) not null, recorded_at timestamptz not null default now()
 );
-create table public.market_prices (
+create table if not exists public.market_prices (
   symbol text primary key check (symbol ~ '^[A-Z][A-Z0-9.]{0,9}$'), price numeric(18,6) not null check (price > 0),
   price_time timestamptz not null, fetched_at timestamptz not null
 );
-create index transactions_user_executed_idx on public.transactions(user_id,executed_at desc);
-create index snapshots_user_recorded_idx on public.portfolio_snapshots(user_id,recorded_at desc);
+-- Complete partially-created versions of these tables without dropping existing user data.
+alter table public.profiles add column if not exists nickname text;
+alter table public.profiles add column if not exists initial_balance numeric(18,6) default 10000;
+alter table public.profiles add column if not exists cash_balance numeric(18,6) default 10000;
+alter table public.profiles add column if not exists created_at timestamptz default now();
+alter table public.profiles add column if not exists updated_at timestamptz default now();
+update public.profiles set nickname = 'Trader-' || left(replace(id::text,'-',''),8) where nickname is null or btrim(nickname) = '';
+update public.profiles set initial_balance=10000 where initial_balance is null;
+update public.profiles set cash_balance=10000 where cash_balance is null;
+update public.profiles set created_at=now() where created_at is null;
+update public.profiles set updated_at=now() where updated_at is null;
+alter table public.profiles alter column nickname set not null;
+alter table public.profiles alter column initial_balance set default 10000;
+alter table public.profiles alter column initial_balance set not null;
+alter table public.profiles alter column cash_balance set default 10000;
+alter table public.profiles alter column cash_balance set not null;
+alter table public.profiles alter column created_at set default now();
+alter table public.profiles alter column created_at set not null;
+alter table public.profiles alter column updated_at set default now();
+alter table public.profiles alter column updated_at set not null;
 
+alter table public.watchlist add column if not exists id uuid default gen_random_uuid();
+alter table public.watchlist add column if not exists user_id uuid default auth.uid();
+alter table public.watchlist add column if not exists symbol text;
+alter table public.watchlist add column if not exists created_at timestamptz default now();
+update public.watchlist set created_at=now() where created_at is null;
+alter table public.watchlist alter column id set default gen_random_uuid();
+alter table public.watchlist alter column user_id set default auth.uid();
+alter table public.watchlist alter column created_at set default now();
+alter table public.watchlist alter column created_at set not null;
+
+alter table public.transactions add column if not exists id uuid default gen_random_uuid();
+alter table public.transactions add column if not exists user_id uuid;
+alter table public.transactions add column if not exists symbol text;
+alter table public.transactions add column if not exists side text;
+alter table public.transactions add column if not exists quantity numeric(18,6);
+alter table public.transactions add column if not exists price numeric(18,6);
+alter table public.transactions add column if not exists total_amount numeric(18,6) generated always as (round(quantity * price, 6)) stored;
+alter table public.transactions add column if not exists realized_pl numeric(18,6) default 0;
+alter table public.transactions add column if not exists executed_at timestamptz default now();
+update public.transactions set realized_pl=0 where realized_pl is null;
+update public.transactions set executed_at=now() where executed_at is null;
+alter table public.transactions alter column id set default gen_random_uuid();
+alter table public.transactions alter column realized_pl set default 0;
+alter table public.transactions alter column realized_pl set not null;
+alter table public.transactions alter column executed_at set default now();
+alter table public.transactions alter column executed_at set not null;
+-- Normalize a pre-existing ordinary total_amount column into the same database-computed
+-- value used on new installs. Existing values are recalculated from quantity and price.
+do $$
+declare generated_kind "char";
+begin
+  select a.attgenerated into generated_kind
+  from pg_attribute a
+  where a.attrelid = 'public.transactions'::regclass and a.attname = 'total_amount' and not a.attisdropped;
+  if coalesce(generated_kind, '') = '' then
+    alter table public.transactions alter column total_amount drop default;
+    alter table public.transactions alter column total_amount set expression as (round(quantity * price, 6));
+  end if;
+end $$;
+
+alter table public.positions add column if not exists id uuid default gen_random_uuid();
+alter table public.positions add column if not exists user_id uuid;
+alter table public.positions add column if not exists symbol text;
+alter table public.positions add column if not exists quantity numeric(18,6);
+alter table public.positions add column if not exists average_buy_price numeric(18,6);
+alter table public.positions add column if not exists updated_at timestamptz default now();
+update public.positions set updated_at=now() where updated_at is null;
+alter table public.positions alter column id set default gen_random_uuid();
+alter table public.positions alter column updated_at set default now();
+alter table public.positions alter column updated_at set not null;
+
+alter table public.portfolio_snapshots add column if not exists id uuid default gen_random_uuid();
+alter table public.portfolio_snapshots add column if not exists user_id uuid;
+alter table public.portfolio_snapshots add column if not exists cash_balance numeric(18,6);
+alter table public.portfolio_snapshots add column if not exists positions_value numeric(18,6);
+alter table public.portfolio_snapshots add column if not exists total_value numeric(18,6);
+alter table public.portfolio_snapshots add column if not exists realized_pl numeric(18,6);
+alter table public.portfolio_snapshots add column if not exists unrealized_pl numeric(18,6);
+alter table public.portfolio_snapshots add column if not exists recorded_at timestamptz default now();
+update public.portfolio_snapshots set recorded_at=now() where recorded_at is null;
+alter table public.portfolio_snapshots alter column id set default gen_random_uuid();
+alter table public.portfolio_snapshots alter column recorded_at set default now();
+alter table public.portfolio_snapshots alter column recorded_at set not null;
+
+alter table public.market_prices add column if not exists symbol text;
+alter table public.market_prices add column if not exists price numeric(18,6);
+alter table public.market_prices add column if not exists price_time timestamptz;
+alter table public.market_prices add column if not exists fetched_at timestamptz;
+
+create unique index if not exists watchlist_user_symbol_uidx on public.watchlist(user_id,symbol);
+create unique index if not exists positions_user_symbol_uidx on public.positions(user_id,symbol);
+create index if not exists transactions_user_executed_idx on public.transactions(user_id,executed_at desc);
+create index if not exists snapshots_user_recorded_idx on public.portfolio_snapshots(user_id,recorded_at desc);
+
+drop trigger if exists profiles_updated_at on public.profiles;
+drop trigger if exists positions_updated_at on public.positions;
+drop function if exists public.set_updated_at();
 create function public.set_updated_at() returns trigger language plpgsql set search_path = '' as $$
 begin new.updated_at := now(); return new; end $$;
 create trigger profiles_updated_at before update on public.profiles for each row execute function public.set_updated_at();
 create trigger positions_updated_at before update on public.positions for each row execute function public.set_updated_at();
 
 -- Do not allow a client to change either balance or initial grant through profile updates.
+drop trigger if exists profiles_protect_financial on public.profiles;
+drop function if exists public.protect_profile_financial_fields();
 create function public.protect_profile_financial_fields() returns trigger language plpgsql set search_path = '' as $$
 begin
   if auth.uid() is not null and (new.initial_balance is distinct from old.initial_balance or new.cash_balance is distinct from old.cash_balance) then
@@ -51,6 +151,8 @@ begin
 end $$;
 create trigger profiles_protect_financial before update on public.profiles for each row execute function public.protect_profile_financial_fields();
 
+drop trigger if exists on_auth_user_created on auth.users;
+drop function if exists public.handle_new_user();
 create function public.handle_new_user() returns trigger language plpgsql security definer set search_path = '' as $$
 declare chosen_nickname text;
 begin
@@ -64,6 +166,8 @@ create trigger on_auth_user_created after insert on auth.users for each row exec
 
 -- Server-only trade RPC. Its only caller validates the bearer token with Supabase Auth first,
 -- then supplies that verified subject. Never expose this RPC to browser roles.
+drop function if exists public.execute_trade(text,text,numeric,numeric);
+drop function if exists public.execute_trade(uuid,text,text,numeric,numeric);
 create function public.execute_trade(p_user_id uuid,p_symbol text, p_side text, p_quantity numeric, p_price numeric)
 returns jsonb language plpgsql security definer set search_path = '' as $$
 declare
@@ -97,8 +201,8 @@ begin
     if new_qty=0 then delete from public.positions where id=pos.id;
     else update public.positions set quantity=new_qty where id=pos.id; end if;
   end if;
-  insert into public.transactions(user_id,symbol,side,quantity,price,total_amount,realized_pl,executed_at)
-    values(owner_id,sym,trade_side,qty,px,amount,realized,executed) returning id into transaction_id;
+  insert into public.transactions(user_id,symbol,side,quantity,price,realized_pl,executed_at)
+    values(owner_id,sym,trade_side,qty,px,realized,executed) returning id into transaction_id;
   select coalesce(sum(p.quantity*coalesce(mp.price,p.average_buy_price)),0),
          coalesce(sum(p.quantity*(coalesce(mp.price,p.average_buy_price)-p.average_buy_price)),0)
     into position_total,unrealized from public.positions p left join public.market_prices mp on mp.symbol=p.symbol where p.user_id=owner_id;
@@ -113,6 +217,7 @@ end $$;
 -- Only the Edge Function's server credential can call this RPC. The function still derives
 -- ownership from auth.uid() and rejects missing identity. Frontend authenticated users have no EXECUTE.
 
+drop function if exists public.get_portfolio_summary();
 create function public.get_portfolio_summary()
 returns table(cash_balance numeric,positions_value numeric,total_value numeric,realized_pl numeric,unrealized_pl numeric,total_pl numeric)
 language plpgsql security invoker set search_path = '' as $$
@@ -133,6 +238,7 @@ end $$;
 -- that credential exists only in Edge Function secrets and never reaches the browser.
 create schema if not exists private;
 revoke all on schema private from public,anon,authenticated;
+drop function if exists public.cache_market_price(text,numeric,timestamptz,timestamptz);
 create function public.cache_market_price(p_symbol text,p_price numeric,p_price_time timestamptz,p_fetched_at timestamptz)
 returns void language plpgsql security definer set search_path = '' as $$
 begin
@@ -150,12 +256,19 @@ alter table public.transactions enable row level security;
 alter table public.positions enable row level security;
 alter table public.portfolio_snapshots enable row level security;
 alter table public.market_prices enable row level security;
+drop policy if exists "profiles read own" on public.profiles;
 create policy "profiles read own" on public.profiles for select to authenticated using(id=auth.uid());
+drop policy if exists "profiles update nickname only" on public.profiles;
 create policy "profiles update nickname only" on public.profiles for update to authenticated using(id=auth.uid()) with check(id=auth.uid());
+drop policy if exists "watchlist own access" on public.watchlist;
 create policy "watchlist own access" on public.watchlist for all to authenticated using(user_id=auth.uid()) with check(user_id=auth.uid());
+drop policy if exists "transactions read own" on public.transactions;
 create policy "transactions read own" on public.transactions for select to authenticated using(user_id=auth.uid());
+drop policy if exists "positions read own" on public.positions;
 create policy "positions read own" on public.positions for select to authenticated using(user_id=auth.uid());
+drop policy if exists "snapshots read own" on public.portfolio_snapshots;
 create policy "snapshots read own" on public.portfolio_snapshots for select to authenticated using(user_id=auth.uid());
+drop policy if exists "market prices readable" on public.market_prices;
 create policy "market prices readable" on public.market_prices for select to authenticated using(price>0);
 
 revoke all on public.profiles,public.watchlist,public.transactions,public.positions,public.portfolio_snapshots,public.market_prices from anon,authenticated;

@@ -22,6 +22,8 @@ All money values are USD. Database `NUMERIC` values are returned by Supabase as 
 - `getTransactions()` → own append-only transactions newest first, with `side`, `total_amount`, `realized_pl`, and `executed_at`.
 - `getSnapshots()` → own portfolio snapshots ordered by `recorded_at` ascending.
 - `getPortfolioSummary()` → `cash_balance`, `positions_value`, `total_value`, `realized_pl`, `unrealized_pl`, `total_pl`. Missing cached quote valuation falls back to `average_buy_price`; this is not a current price and must be marked unavailable in UI.
+- `getPositionPrices()` → read-only `market_prices` rows (`symbol`, `price`, `price_time`, `fetched_at`) for quote display beside positions. The UI determines quote staleness from `fetched_at` using the documented 24-hour threshold. Missing rows mean the quote and per-position market value/P&L are unavailable; this query does not write prices or alter financial data.
+- `getWatchlist()` → own watchlist rows (`id`, `symbol`, `created_at`) ordered by symbol. Reads are scoped to the authenticated user by RLS.
 
 Each method returns the selected Supabase data and throws the Supabase error. Requires an authenticated session and configured client.
 
